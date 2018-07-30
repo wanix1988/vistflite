@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}TFLite Analyzer -- Model Details{% endblock %}
+{% block navbar %}
+<div class="navbar navbar-inverse" role="navigation">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">TFLite Analyzer</a>
+        </div>
+        <div class="navbar-collapse collapse">
+            <ul class="nav navbar-nav">
+                <li>
+                    <a href="/">Home</a>
+                </li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}
+{% block content %}
+<div class="container">
+    <div class="page-header">
+        {% for message in get_flashed_messages() %}
+            <div class="alert alert-warning" role="alert">{{ message }}</div>
+        {% endfor %}
+    </div>
+    <div>
+        <table class="table">
+            <caption>TFLite Model Details</caption>
+            <tbody>
+                <tr>
+                    <td>File:</td>
+                    <td>{{ tflite_file_name }}</td>
+                </tr>
+                <tr>
+                    <td>Version:</td>
+                    <td>{{ model_version }}</td>
+                </tr>
+                <tr>
+                    <td>Description:</td>
+                    <td>{{ model_description }}</td>
+                </tr>
+            </tbody>
+        </table>
+        <table class="table">
+            <caption>Operator Codes</caption>
+            <tbody>
+            {% for op in model_operator_codes %}
+                <tr>
+                {% for i in range(length(op)) %}
+                    <td>{{ op[i] }}</td>
+                {% endfor %}
+                </tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div>
+    </div>
+</div>
+{% endblock %}
