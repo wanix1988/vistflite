@@ -72,10 +72,10 @@ def __analyze_tflite(fname, buffer):
         op = model.OperatorCodes(i)
         if op.CustomCode():
             print('Custom OP:', op.Version(), op.CustomCode())
-            operatorCodes.append(['Custom OP:', op.Version(), op.CustomCode()])
+            operatorCodes.append(['Custom OP', op.Version(), op.CustomCode()])
         else:
             print('Builtin OP:', op.Version(), op.BuiltinCode(), getBuiltinOperatorStringName(op.BuiltinCode()))
-            operatorCodes.append(['Builtin OP:', op.Version(), op.BuiltinCode(), getBuiltinOperatorStringName(op.BuiltinCode())])
+            operatorCodes.append(['Builtin OP', op.Version(), op.BuiltinCode(), getBuiltinOperatorStringName(op.BuiltinCode())])
     # SubGraphs
     print('SubGraphs:')
     for i in range(model.SubgraphsLength()):
