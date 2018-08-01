@@ -30,8 +30,8 @@
         {% endfor %}
     </div>
     <div>
+        <h4 class="text-center">TFLite Model Details</h4>
         <table class="table">
-            <caption>TFLite Model Details</caption>
             <tbody>
                 <thead>
                     <tr>
@@ -47,8 +47,8 @@
                 </tr>
             </tbody>
         </table>
+        <h4 class="text-center">Operator Codes</h4>
         <table class="table">
-            <caption>Operator Codes</caption>
             <tbody>
                 <thead>
                     <tr>
@@ -67,6 +67,55 @@
             {% endfor %}
             </tbody>
         </table>
+        {% for sg in model_sub_graphs %}
+            <h4 class="text-center">SubGraph-{{ loop.index }}-{{ sg['name'] }}</h4>
+            <table class="table">
+                <caption>Tensors</caption>
+                <thead>
+                    <tr>
+                        <th>No.</th>
+                        <th>Name</th>
+                        <th>Shape</th>
+                        <th>Type</th>
+                        <th>IsVar.</th>
+                        <th>Quantization</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for t in sg['tensors'] %}
+                        <tr>
+                            <td>{{ loop.index }}</td>
+                            <td>{{ t['name'] }}</td>
+                            <td>{{ t['type'] }}</td>
+                            <td>{{ t['shape'] }}</td>
+                            <td>{{ t['is_variable'] }}</td>
+                            <td>{{ t['quantization'] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            <table class="table">
+                <caption>Operators</caption>
+                <thead>
+                    <tr>
+                        <th>Opcode</th>
+                        <th>Cus.Op.Fmt</th>
+                        <th>Inputs</th>
+                        <th>Outputs</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for o in sg['operators'] %}
+                        <tr>
+                            <td>{{ o['opcode_index'] }}</td>
+                            <td>{{ o['custom_operations_format'] }}</td>
+                            <td>{{ o['inputs'] }}</td>
+                            <td>{{ o['outputs'] }}</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        {% endfor %}
     </div>
     <div>
     </div>

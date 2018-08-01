@@ -16,6 +16,7 @@ from tflite.Model import Model
 from tflite.OperatorCode import OperatorCode
 from tflite.BuiltinOperator import BuiltinOperator
 from tflite.SubGraph import SubGraph
+from tflite.TensorType import TensorType
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
@@ -26,11 +27,14 @@ IN_MEMORY_SIZE = 100 * 1024 * 1024 #100MB
 
 bootstrap = Bootstrap(app)
 
-def getBuiltinOperatorStringName(idx):
-    allAttrs = [i for i in BuiltinOperator.__dict__.items() if not i[0].startswith('__')]
+def getStringName(clazz, idx):
+    allAttrs = [i for i in clazz.__dict__.items() if not i[0].startswith('__')]
     for name, index in allAttrs:
         if index == idx:
             return name
+
+def __getBuiltinOperatorStringName(idx):
+    return getStringName(BuiltinOperator, idx)
 
 @app.route('/')
 def index():
@@ -39,8 +43,13 @@ def index():
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] == 'tflite'
 
-@app.route('/analyze_tflite', methods=['POST'])
-def analyze_tflite():
+@app.route('/analyze/<clazz>', methods=['POST'])
+def analyze(clazz):
+    if clazz == 'tflite':
+        return __handle_analyze_tflite(request)
+    return 'Invalid Request', 500
+
+def __handle_analyze_tflite(request):
     global IN_MEMORY_SIZE
     if not request.files:
         flash('TFLite file is required!!!')
@@ -49,7 +58,6 @@ def analyze_tflite():
     print(dir(f))
     if f and allowed_file(f.filename):
         fname = secure_filename(f.filename)
-        print(dir(f))
         f.seek(0, os.SEEK_END)
         length = f.tell()
         f.seek(0, os.SEEK_SET)
@@ -63,6 +71,49 @@ def analyze_tflite():
     flash('Wrong Request!!!')
     return redirect(request.url)
 
+def __getTensorTypeStringName(idx):
+    return getStringName(TensorType, idx)
+
+def __catenate_list(length, func):
+    val = ''
+    container = []
+    for i in range(length):
+        container.append(str(func(i)))
+    val += ','.join(container)
+    container.clear()
+    return val
+
+def __join_list(length, lst):
+    return ','.join([str(lst(i)) for i in range(length)])
+
+def __dump_operator(operator):
+    return {
+        'opcode_index': operator.OpcodeIndex(),
+        'custom_operations_format': operator.CustomOptionsFormat(),
+        'inputs': __join_list(operator.InputsLength(), operator.Inputs),
+        'outputs': __join_list(operator.OutputsLength(), operator.Outputs)
+    }
+
+def __dump_quantization_parameters(quantization):
+    minVal = 'min:'
+    maxVal = 'max:'
+    scaleVal = 'scale:'
+    zeroPointVal = 'zeroPoint:'
+    minVal += __catenate_list(quantization.MinLength(), quantization.Min)
+    maxVal += __catenate_list(quantization.MaxLength(), quantization.Max)
+    scaleVal += __catenate_list(quantization.ScaleLength(), quantization.Scale)
+    zeroPointVal += __catenate_list(quantization.ZeroPointLength(), quantization.ZeroPoint)
+    return minVal, maxVal, scaleVal, zeroPointVal
+
+def __dump_tensor(tensor):
+    return {
+        'name': bytes.decode(tensor.Name()),
+        'shape': ','.join([str(tensor.Shape(i)) for i in range(tensor.ShapeLength())]),
+        'type': __getTensorTypeStringName(tensor.Type()),
+        'is_variable': 'True' if tensor.IsVariable() else 'False',
+        'quantization': __dump_quantization_parameters(tensor.Quantization())
+    }        
+
 def __analyze_tflite(fname, buffer):
     print('vistflite...')
     model = Model.GetRootAsModel(buffer, 0)
@@ -74,21 +125,31 @@ def __analyze_tflite(fname, buffer):
             print('Custom OP:', op.Version(), op.CustomCode())
             operatorCodes.append(['Custom OP', op.Version(), op.CustomCode()])
         else:
-            print('Builtin OP:', op.Version(), op.BuiltinCode(), getBuiltinOperatorStringName(op.BuiltinCode()))
-            operatorCodes.append(['Builtin OP', op.Version(), op.BuiltinCode(), getBuiltinOperatorStringName(op.BuiltinCode())])
+            print('Builtin OP:', op.Version(), op.BuiltinCode(), __getBuiltinOperatorStringName(op.BuiltinCode()))
+            operatorCodes.append(['Builtin OP', op.Version(), op.BuiltinCode(), __getBuiltinOperatorStringName(op.BuiltinCode())])
     # SubGraphs
     print('SubGraphs:')
+    subGraphs = []
     for i in range(model.SubgraphsLength()):
         subGraph = model.Subgraphs(i)
         print('Name:', subGraph.Name())
         print('Tensors:')
+        tensors = []
         for j in range(subGraph.TensorsLength()):
-            print(subGraph.Tensors(j).Name())
+            tensor = __dump_tensor(subGraph.Tensors(j))
+            tensors.append(tensor)
+        operators = []
+        for j in range(subGraph.OperatorsLength()):
+            operator = __dump_operator(subGraph.Operators(j))
+            operators.append(operator)
+        subGraphs.append({'name': subGraph.Name(), 'tensors': tensors, 'operators': operators})
+        print('input length:', subGraph.InputsLength(), 'output length:', subGraph.OutputsLength(), 'operators length:', subGraph.OperatorsLength())
     return render_template('tflite_model_details.html',
                             tflite_file_name=fname,
                             model_version=model.Version(),
                             model_description=model.Description(),
-                            model_operator_codes=operatorCodes)
+                            model_operator_codes=operatorCodes,
+                            model_sub_graphs=subGraphs)
 
 @app.errorhandler(404)
 def page_not_found(e):
