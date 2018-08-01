@@ -75,8 +75,8 @@
                     <tr>
                         <th>No.</th>
                         <th>Name</th>
-                        <th>Shape</th>
                         <th>Type</th>
+                        <th>Shape</th>
                         <th>IsVar.</th>
                         <th>Quantization</th>
                     </tr>
@@ -99,6 +99,7 @@
                 <thead>
                     <tr>
                         <th>Opcode</th>
+                        <th>OpName</th>
                         <th>Cus.Op.Fmt</th>
                         <th>Inputs</th>
                         <th>Outputs</th>
@@ -107,7 +108,8 @@
                 <tbody>
                     {% for o in sg['operators'] %}
                         <tr>
-                            <td>{{ o['opcode_index'] }}</td>
+                            <td>{{ o['opcode'] }}</td>
+                            <td>{{ o['opname'] }}</td>
                             <td>{{ o['custom_operations_format'] }}</td>
                             <td>{{ o['inputs'] }}</td>
                             <td>{{ o['outputs'] }}</td>

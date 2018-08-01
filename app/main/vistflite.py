@@ -88,7 +88,8 @@ def __join_list(length, lst):
 
 def __dump_operator(operator):
     return {
-        'opcode_index': operator.OpcodeIndex(),
+        'opcode': operator.OpcodeIndex(),
+        'opname': __getBuiltinOperatorStringName(operator.OpcodeIndex()), 
         'custom_operations_format': operator.CustomOptionsFormat(),
         'inputs': __join_list(operator.InputsLength(), operator.Inputs),
         'outputs': __join_list(operator.OutputsLength(), operator.Outputs)
