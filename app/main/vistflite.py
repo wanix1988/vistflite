@@ -22,6 +22,7 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
 app.config['MAX_CONTENT_LENGTH'] = 1024 * 1024 * 1024 #1GB
 app.config['UPLOAD_FOLDER'] = tempfile.gettempdir()
+app.config['useLocal'] = True
 
 IN_MEMORY_SIZE = 100 * 1024 * 1024 #100MB
 
@@ -38,15 +39,21 @@ def __getBuiltinOperatorStringName(idx):
 
 @app.route('/')
 def index():
-    return render_template(r'analyze_tflite.html', name='tflite')
+    return render_template(r'analyze_tflite.html', name='tflite', useLocal=app.config['useLocal'])
 
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1] == 'tflite'
 
-@app.route('/analyze/<clazz>', methods=['POST'])
-def analyze(clazz):
+@app.route('/analyze/<clazz>/<type>', methods=['POST'])
+def analyze(clazz, type):
     if clazz == 'tflite':
-        return __handle_analyze_tflite(request)
+        if type == 'remote':
+            return __handle_analyze_tflite(request)
+        elif type == 'local':
+            fname = request.form['local_tflite']
+            with open(fname, 'rb') as df:
+                content = df.read()
+                return __analyze_tflite(fname, content)
     return 'Invalid Request', 500
 
 def __handle_analyze_tflite(request):
@@ -54,8 +61,7 @@ def __handle_analyze_tflite(request):
     if not request.files:
         flash('TFLite file is required!!!')
         return redirect(request.url)
-    f = request.files['tflite']
-    print(dir(f))
+    f = request.files['remote_tflite']
     if f and allowed_file(f.filename):
         fname = secure_filename(f.filename)
         f.seek(0, os.SEEK_END)

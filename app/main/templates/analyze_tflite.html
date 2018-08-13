@@ -30,16 +30,84 @@
         {% endfor %}
     </div>
     <div>
-        <form action="/analyze/tflite" method="post" enctype="multipart/form-data">
-            <div class="col-lg-6">
-                <div class="input-group">
-                    <input type="file" name="tflite" id="tflite" class="form-control">
-                    <span class="input-group-btn">
-                        <button class="btn btn-default" type="submit"><span class="glyphicon glyphicon-search"></span></button>
-                    </span>
-                </div><!-- /input-group -->
+        <form id="tfliteForm" method="post">
+            <div class="col-lg-6 col-lg-offset-3">
+                <div class="btn-group">
+                    <button id="typeBtn" type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                       远程解析<span class="caret"></span>
+                    </button>
+                    <ul class="dropdown-menu">
+                        <li><a href="#">远程解析</a></li>
+                        {% if useLocal %}
+                        <li role="separator" class="divider"></li>
+                        <li><a href="#">本地解析</a></li>
+                        {% endif %}
+                    </ul>
+                    <div class="remote input-group">
+                        <input type="file" name="remote_tflite" id="remote_tflite" class="form-control">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" id="submitRemote"><span class="glyphicon glyphicon-search"></span></button>
+                        </span>
+                    </div><!-- remote -->
+                    {% if useLocal %}
+                    <div class="local input-group">
+                        <input type="text" name="local_tflite" id="local_tflite" placeholder="请输入本机TFLite文件路径" class="form-control">
+                        <span class="input-group-btn">
+                            <button class="btn btn-default" id="submitLocal"><span class="glyphicon glyphicon-search"></span></button>
+                        </span>
+                    </div><!-- local -->
+                    {% endif %}
+                </div>
             </div><!-- /.col-lg-6 -->
         </form>
     </div>
 </div>
+{% endblock %}
+{% block scripts %}
+    {{ super() }}
+    <script>
+        $(function(){
+            var remote = true;
+            var caret = '<span class="caret"></span>';
+            {% if useLocal %}
+            $('div.local').hide();
+            {% endif %}
+            // 远程解析
+            $('ul>li:eq(1)').click(function(e){
+                $('#typeBtn').removeClass('btn-success')
+                             .addClass('btn-primary')
+                             .html(e.delegateTarget.innerText + caret);
+                $('div.remote').show();
+                {% if useLocal %}
+                $('div.local').hide();
+                {% endif %}
+                remote = true;
+            });
+            {% if useLocal %}
+            // 本地解析
+            $('ul>li:eq(3)').click(function(e){
+                $('#typeBtn').removeClass('btn-primary')
+                             .addClass('btn-success')
+                             .html(e.delegateTarget.innerText + caret);
+                $('div.remote').hide();
+                $('div.local').show();
+                remote = false;
+            });
+            {% endif %}
+            function submit(){
+                var form = $('#tfliteForm');
+                if (remote) {
+                    form.attr('action', '/analyze/tflite/remote'); 
+                    form.attr('enctype', 'multipart/form-data');
+                } else {
+                    form.attr('action', '/analyze/tflite/local');
+                    form.attr('enctype', 'application/x-www-form-urlencoded');
+                }
+                console.log(form);
+                form.submit();
+            }
+            $('#submitRemote').click(submit);
+            $('#submitLocal').click(submit);
+        });
+    </script>
 {% endblock %}
